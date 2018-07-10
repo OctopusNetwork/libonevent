@@ -3,18 +3,18 @@
 #include <signal.h>
 #include <sys/select.h>
 
-#include "ocnet_thread.h"
+#include "libonplatform/ocnet_thread.h"
 
-#include "onevent.h"
-#include "onevgrp.h"
-#include "onlfds.h"
+#include "libonevent/onevent.h"
+#include "libonevent/onevgrp.h"
+#include "libonevent/onlfds.h"
 
 static int g_running = 0;
 
 static void *__evgrp_handler(void *arg)
 {
-    void *evgrp = arg;
-    void *lfds = ocnet_lfds_new();
+    ocnet_evgrp_t *evgrp = arg;
+    ocnet_lfds_t *lfds = ocnet_lfds_new();
 
     do {
         ocnet_evgrp_wait(evgrp, 100000000, lfds);
@@ -33,21 +33,21 @@ static void __sigint_handler(int sig)
 
 int main(int argc, char *argv[])
 {
-    void *thread = NULL;
-    void *event1 = NULL;
-    void *event2 = NULL;
-    void *evgrp = NULL;
+    ocnet_thread_t *thread = NULL;
+    ocnet_event_t *event1 = NULL;
+    ocnet_event_t *event2 = NULL;
+    ocnet_evgrp_t *evgrp = NULL;
     int rc = 0;
 
     event1 = ocnet_event_create(1,
-            ocnet_EVENT_READ | ocnet_EVENT_ERROR,
+            OCNET_EVENT_READ | OCNET_EVENT_ERROR,
             1, 0, 0);
     if (NULL == event1) {
         return -1;
     }
 
     event2 = ocnet_event_create(1,
-            ocnet_EVENT_READ | ocnet_EVENT_ERROR,
+            OCNET_EVENT_READ | OCNET_EVENT_ERROR,
             1, 0, 0);
     if (NULL == event2) {
         rc = -1;

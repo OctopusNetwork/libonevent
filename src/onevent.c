@@ -1,14 +1,14 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "ocnet_malloc.h"
-#include "ocnet_math.h"
+#include "libonplatform/ocnet_malloc.h"
+#include "libonplatform/ocnet_math.h"
 
 #include "onevent.h"
 
 #include "onlfds_internal.h"
 
-typedef struct {
+struct ocnet_event {
     unsigned char   need_drain:         1,
                     internal_event:     1,
                     internal_listen:    1;
@@ -16,12 +16,12 @@ typedef struct {
     int             read_fd;
     int             write_fd;
     int             listen_events;
-} ocnet_event_s_t;
+};
 
-void *ocnet_event_create(int internal_event, int events,
+ocnet_event_t *ocnet_event_create(int internal_event, int events,
         int need_drain, int read_end, int write_end)
 {
-    ocnet_event_s_t *ev = NULL;
+    ocnet_event_t *ev = NULL;
     int pipefd[2];
 
     if (0 != internal_event) {
@@ -30,7 +30,7 @@ void *ocnet_event_create(int internal_event, int events,
         }
     }
 
-    ev = ocnet_malloc(sizeof(ocnet_event_s_t));
+    ev = ocnet_malloc(sizeof(ocnet_event_t));
     if (NULL == ev) {
         goto L_ERROR_EVENT_MALLOC;
     }
@@ -57,9 +57,9 @@ L_ERROR_EVENT_MALLOC:
     return NULL;
 }
 
-void ocnet_event_destroy(void *event)
+void ocnet_event_destroy(ocnet_event_t *event)
 {
-    ocnet_event_s_t *ev = (ocnet_event_s_t *)event;
+    ocnet_event_t *ev = (ocnet_event_t *)event;
 
     if (1 == ev->internal_event) {
         close(ev->read_fd);
@@ -68,7 +68,7 @@ void ocnet_event_destroy(void *event)
     ocnet_free(ev);
 }
 
-static int __event_drain(ocnet_event_s_t *event, void *lfds)
+static int __event_drain(ocnet_event_t *event, ocnet_lfds_t *lfds)
 {
     char buf[1024] = {0};
 
@@ -83,9 +83,9 @@ static int __event_drain(ocnet_event_s_t *event, void *lfds)
     return 0;
 }
 
-int ocnet_event_process(void *event, void *lfds)
+int ocnet_event_process(ocnet_event_t *event, ocnet_lfds_t *lfds)
 {
-    ocnet_event_s_t *ev = (ocnet_event_s_t *)event;
+    ocnet_event_t *ev = (ocnet_event_t *)event;
 
     if (1 == ev->need_drain) {
         return __event_drain(ev, lfds);
@@ -94,19 +94,19 @@ int ocnet_event_process(void *event, void *lfds)
     return 0;
 }
 
-int ocnet_event_enroll(void *event, void *lfds, int *max_fd)
+int ocnet_event_enroll(ocnet_event_t *event, ocnet_lfds_t *lfds, int *max_fd)
 {
-    ocnet_event_s_t *ev = (ocnet_event_s_t *)event;
+    ocnet_event_t *ev = (ocnet_event_t *)event;
 
-    if (0 != (ev->listen_events & ocnet_EVENT_READ)) {
-        ocnet_lfds_enroll(lfds, ev->read_fd, ocnet_EVENT_READ);
+    if (0 != (ev->listen_events & OCNET_EVENT_READ)) {
+        ocnet_lfds_enroll(lfds, ev->read_fd, OCNET_EVENT_READ);
     }
-    if (0 != (ev->listen_events & ocnet_EVENT_WRITE)) {
-        ocnet_lfds_enroll(lfds, ev->write_fd, ocnet_EVENT_WRITE);
+    if (0 != (ev->listen_events & OCNET_EVENT_WRITE)) {
+        ocnet_lfds_enroll(lfds, ev->write_fd, OCNET_EVENT_WRITE);
     }
-    if (0 != (ev->listen_events & ocnet_EVENT_ERROR)) {
-        ocnet_lfds_enroll(lfds, ev->write_fd, ocnet_EVENT_ERROR);
-        ocnet_lfds_enroll(lfds, ev->read_fd, ocnet_EVENT_ERROR);
+    if (0 != (ev->listen_events & OCNET_EVENT_ERROR)) {
+        ocnet_lfds_enroll(lfds, ev->write_fd, OCNET_EVENT_ERROR);
+        ocnet_lfds_enroll(lfds, ev->read_fd, OCNET_EVENT_ERROR);
     }
 
     *max_fd = __MAX2(*max_fd, ev->read_fd);
@@ -114,53 +114,53 @@ int ocnet_event_enroll(void *event, void *lfds, int *max_fd)
     return 0;
 }
 
-int ocnet_event_happen(void *event, void *lfds, int events)
+int ocnet_event_happen(ocnet_event_t *event, ocnet_lfds_t *lfds, int events)
 {
-    ocnet_event_s_t *ev = (ocnet_event_s_t *)event;
+    ocnet_event_t *ev = (ocnet_event_t *)event;
     int event_happen = 0;
 
-    if (0 != (ev->listen_events & ocnet_EVENT_READ) &&
-            0 != (events & ocnet_EVENT_READ)) {
+    if (0 != (ev->listen_events & OCNET_EVENT_READ) &&
+            0 != (events & OCNET_EVENT_READ)) {
         if (0 != ocnet_lfds_readable(lfds, ev->read_fd)) {
-            event_happen |= ocnet_EVENT_READ;
+            event_happen |= OCNET_EVENT_READ;
         }
     }
 
-    if (0 != (ev->listen_events & ocnet_EVENT_WRITE) &&
-            0 != (events & ocnet_EVENT_WRITE)) {
+    if (0 != (ev->listen_events & OCNET_EVENT_WRITE) &&
+            0 != (events & OCNET_EVENT_WRITE)) {
         if (0 != ocnet_lfds_writable(lfds, ev->write_fd)) {
-            event_happen |= ocnet_EVENT_WRITE;
+            event_happen |= OCNET_EVENT_WRITE;
         }
     }
 
-    if (0 != (ev->listen_events & ocnet_EVENT_ERROR) &&
-            0 != (events & ocnet_EVENT_ERROR)) {
+    if (0 != (ev->listen_events & OCNET_EVENT_ERROR) &&
+            0 != (events & OCNET_EVENT_ERROR)) {
         if (0 != ocnet_lfds_error(lfds, ev->read_fd) ||
                 0 != ocnet_lfds_error(lfds, ev->write_fd)) {
-            event_happen |= ocnet_EVENT_ERROR;
+            event_happen |= OCNET_EVENT_ERROR;
         }
     }
 
     return event_happen;
 }
 
-int ocnet_event_add(void *event, int evbit)
+int ocnet_event_add(ocnet_event_t *event, int evbit)
 {
-    ocnet_event_s_t *ev = (ocnet_event_s_t *)event;
+    ocnet_event_t *ev = (ocnet_event_t *)event;
     ev->listen_events |= evbit;
     return 0;
 }
 
-int ocnet_event_del(void *event, int evbit)
+int ocnet_event_del(ocnet_event_t *event, int evbit)
 {
-    ocnet_event_s_t *ev = (ocnet_event_s_t *)event;
+    ocnet_event_t *ev = (ocnet_event_t *)event;
     ev->listen_events &= ~evbit;
     return 0;
 }
 
-int ocnet_event_wait(void *event, void *lfds, int millseconds)
+int ocnet_event_wait(ocnet_event_t *event, ocnet_lfds_t *lfds, int millseconds)
 {
-    ocnet_event_s_t *ev = (ocnet_event_s_t *)event;
+    ocnet_event_t *ev = (ocnet_event_t *)event;
     int rc = 0;
     int max_fd = 0;
 
@@ -181,9 +181,9 @@ int ocnet_event_wait(void *event, void *lfds, int millseconds)
     return rc;
 }
 
-int ocnet_event_wakeup(void *event)
+int ocnet_event_wakeup(ocnet_event_t *event)
 {
-    ocnet_event_s_t *ev = (ocnet_event_s_t *)event;
+    ocnet_event_t *ev = (ocnet_event_t *)event;
     if (1 == ev->internal_event) {
         char c = 0x5A;
         return write(ev->write_fd, &c, 1);

@@ -1,21 +1,26 @@
 #ifndef __ONC_EVENT____H__
 #define __ONC_EVENT____H__
 
+#include "onlfds.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void   *onc_event_create(int internal_event, int events,
-            int need_drain, int read_end, int write_end);
-void    onc_event_destroy(void *event);
-int     onc_event_enroll(void *event, void *lfds, int *max_fd);
-int     onc_event_wait(void *event, void *lfds, int millseconds);
-int     onc_event_happen(void *event, void *lfds, int events);
+struct ocnet_event;
+typedef struct ocnet_event  ocnet_event_t;
+
+ocnet_event_t  *ocnet_event_create(int internal_event, int events,
+                    int need_drain, int read_end, int write_end);
+void            ocnet_event_destroy(ocnet_event_t *event);
+int             ocnet_event_enroll(ocnet_event_t *event, ocnet_lfds_t *lfds, int *max_fd);
+int             ocnet_event_wait(ocnet_event_t *event, ocnet_lfds_t *lfds, int millseconds);
+int             ocnet_event_happen(ocnet_event_t *event, ocnet_lfds_t *lfds, int events);
 /* Dynamic event support */
-int     onc_event_add(void *event, int evbit);
-int     onc_event_del(void *event, int evbit);
-int     onc_event_process(void *event, void *lfds);
-int     onc_event_wakeup(void *event);
+int             ocnet_event_add(ocnet_event_t *event, int evbit);
+int             ocnet_event_del(ocnet_event_t *event, int evbit);
+int             ocnet_event_process(ocnet_event_t *event, ocnet_lfds_t *lfds);
+int             ocnet_event_wakeup(ocnet_event_t *event);
 
 #ifdef __cplusplus
 }

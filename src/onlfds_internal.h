@@ -7,12 +7,12 @@
 extern "C" {
 #endif
 
-int     ocnet_lfds_readable(void *lfds, int fd);
-int     ocnet_lfds_writable(void *lfds, int fd);
-int     ocnet_lfds_error(void *lfds, int fd);
-int     ocnet_lfds_enroll(void *lfds, int fd, int flags);
-void    ocnet_lfds_zero(void *lfds);
-int     ocnet_lfds_wait(void *lfds, int nfds, int millseconds);
+int     ocnet_lfds_readable(ocnet_lfds_t *lfds, int fd);
+int     ocnet_lfds_writable(ocnet_lfds_t *lfds, int fd);
+int     ocnet_lfds_error(ocnet_lfds_t *lfds, int fd);
+int     ocnet_lfds_enroll(ocnet_lfds_t *lfds, int fd, int flags);
+void    ocnet_lfds_zero(ocnet_lfds_t *lfds);
+int     ocnet_lfds_wait(ocnet_lfds_t *lfds, int nfds, int millseconds);
 
 #ifdef __cplusplus
 }

@@ -2,11 +2,11 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include "ocnet_thread.h"
+#include "libonplatform/ocnet_thread.h"
 
-#include "onevent.h"
+#include "libonevent/onevent.h"
 
-#include "onlfds.h"
+#include "libonevent/onlfds.h"
 
 static int g_running = 0;
 
@@ -14,7 +14,7 @@ static void *__event_handler(void *arg)
 {
     void *event = arg;
     int rc = 0;
-    void *lfds = ocnet_lfds_new();
+    ocnet_lfds_t *lfds = ocnet_lfds_new();
 
     do {
         rc = ocnet_event_wait(event, lfds, 100000);
@@ -33,9 +33,9 @@ static void __sigint_handler(int sig)
 
 int main(int argc, char *argv[])
 {
-    void *thread = NULL;
-    void *event = ocnet_event_create(1,
-            ocnet_EVENT_READ | ocnet_EVENT_ERROR,
+    ocnet_thread_t *thread = NULL;
+    ocnet_event_t *event = ocnet_event_create(1,
+            OCNET_EVENT_READ | OCNET_EVENT_ERROR,
             1, 0, 0);
 
     if (NULL == event) {

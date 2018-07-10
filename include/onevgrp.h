@@ -1,16 +1,22 @@
 #ifndef __ONC_EVENT_GROUP____H__
 #define __ONC_EVENT_GROUP____H__
 
+#include "onlfds.h"
+#include "onevent.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void   *onc_evgrp_create(int max_events);
-void    onc_evgrp_destroy(void *evgrp);
-int     onc_evgrp_event_add(void *evgrp, void *event);
-int     onc_evgrp_event_del(void *evgrp, void *event);
-int     onc_evgrp_wait(void *evgrp, int millseconds, void *lfds);
-int     onc_evgrp_wakeup(void *evgrp);
+struct ocnet_evgrp;
+typedef struct ocnet_evgrp  ocnet_evgrp_t;
+
+ocnet_evgrp_t  *ocnet_evgrp_create(int max_events);
+void            ocnet_evgrp_destroy(ocnet_evgrp_t *evgrp);
+int             ocnet_evgrp_event_add(ocnet_evgrp_t *evgrp, ocnet_event_t *event);
+int             ocnet_evgrp_event_del(ocnet_evgrp_t *evgrp, ocnet_event_t *event);
+int             ocnet_evgrp_wait(ocnet_evgrp_t *evgrp, int millseconds, ocnet_lfds_t *lfds);
+int             ocnet_evgrp_wakeup(ocnet_evgrp_t *evgrp);
 
 #ifdef __cplusplus
 }
